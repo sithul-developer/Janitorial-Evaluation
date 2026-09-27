@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#F1BE48">
-    <title>BVM Employee Survey System</title>
+    <title>Internview System</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         html, body {
             width: 100%;
@@ -31,7 +35,7 @@
             display: block;
         }
 
-        /* Loader */
+        /* Loading screen shown while iframe initializes */
         .loader {
             position: absolute;
             inset: 0;
@@ -69,287 +73,48 @@
             font-size: 15px;
             font-weight: 500;
         }
-
-        /* Top Banner */
-        .top-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 48px;
-            background: linear-gradient(135deg, #006837, #004d28);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            z-index: 100;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            border-bottom: 3px solid #FFD200;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .top-banner .brand {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .top-banner .brand-icon { font-size: 18px; }
-
-        .top-banner .page-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.15);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
-        .top-banner .page-indicator .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #FFD200;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.85); }
-        }
-
-        .top-banner .logout-btn {
-            background: #FFD200;
-            color: #222;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .top-banner .logout-btn:hover {
-            background: #e6bd00;
-            transform: scale(0.97);
-        }
-
-        /* Iframe Container */
-        .iframe-container {
-            position: absolute;
-            top: 48px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-        }
-
-        .iframe-container .fullscreen-iframe {
-            width: 100%;
-            height: 100%;
-        }
-
-        body.login-mode .top-banner { display: none; }
-        body.login-mode .iframe-container { top: 0; }
-
-        @media (max-width: 480px) {
-            .top-banner { height: 44px; padding: 0 12px; font-size: 12px; }
-            .top-banner .brand-text { display: none; }
-            .top-banner .page-indicator { font-size: 11px; padding: 3px 10px; }
-            .iframe-container { top: 44px; }
-        }
     </style>
 </head>
-<body class="login-mode">
-
-    <div class="top-banner" id="topBanner">
-        <div class="brand">
-            <span class="brand-icon">📋</span>
-            <span class="brand-text">BVM Employee Survey</span>
-        </div>
-        <div class="page-indicator">
-            <span class="dot"></span>
-            <span id="currentPageLabel">Survey</span>
-        </div>
-        <button class="logout-btn" onclick="logout()">
-            🚪 <span>Logout</span>
-        </button>
-    </div>
+<body>
 
     <div class="fullscreen-wrapper">
-        <div class="loader" id="loader">
-            <div class="loader-spinner"></div>
-            <div class="loader-text" id="loaderText">Loading…</div>
-        </div>
 
-        <div class="iframe-container">
-            <iframe
-                id="surveyFrame"
-                class="fullscreen-iframe"
-                src=""
-                allow="geolocation; camera; microphone; fullscreen"
-                allowfullscreen
-                referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-        </div>
+       
+
+        <!--
+            🔑 KEY FIX: allow="geolocation"
+            Without this attribute, the browser blocks GPS requests
+            coming from inside a cross-origin iframe.
+        -->
+        <iframe
+            id="surveyFrame"
+            class="fullscreen-iframe"
+            src="https://script.google.com/macros/s/AKfycbwSM25ObtDe_AwvXut2QqGjfc9-v-3I2xsrekCCLSn9nmbmhnGZ1HUlxN8zY-O3bs7jxQ/exec"
+            allow="geolocation; camera; microphone; fullscreen"
+            allowfullscreen
+            referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+
     </div>
 
     <script>
-        // ============================================================
-        // CONFIGURATION — Update with your URL
-        // ============================================================
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwSM25ObtDe_AwvXut2QqGjfc9-v-3I2xsrekCCLSn9nmbmhnGZ1HUlxN8zY-O3bs7jxQ/exec';
+        // Hide the loader once the iframe has loaded
+        (function() {
+            const frame = document.getElementById('surveyFrame');
+            const loader = document.getElementById('loader');
 
-        const URL_INDEX     = WEB_APP_URL;
-        const URL_LOGIN     = WEB_APP_URL + '?page=Login';
-        const URL_DASHBOARD = WEB_APP_URL + '?page=Dashboard';
-
-        const STORAGE_TOKEN = 'bvm_user_token';
-        const STORAGE_ROLE  = 'bvm_user_role';
-        const STORAGE_NAME  = 'bvm_user_name';
-
-        let currentPage = 'login';
-
-        const frame = document.getElementById('surveyFrame');
-        const loader = document.getElementById('loader');
-        const loaderText = document.getElementById('loaderText');
-        const currentPageLabel = document.getElementById('currentPageLabel');
-
-        // ============================================================
-        // LOADER
-        // ============================================================
-        function showLoader(text) {
-            loaderText.textContent = text || 'Loading…';
-            loader.classList.remove('hidden');
-            loader.style.display = 'flex';
-        }
-
-        function hideLoader() {
-            loader.classList.add('hidden');
-            setTimeout(() => {
-                if (loader.classList.contains('hidden')) {
-                    loader.style.display = 'none';
-                }
-            }, 500);
-        }
-
-        // ============================================================
-        // PAGE SWITCHING
-        // ============================================================
-        function showLogin() {
-            currentPage = 'login';
-            document.body.classList.add('login-mode');
-            showLoader('Loading Login…');
-            frame.src = URL_LOGIN;
-            console.log('📄 → Login');
-        }
-
-        function showIndex() {
-            currentPage = 'index';
-            document.body.classList.remove('login-mode');
-            currentPageLabel.textContent = 'Survey';
-            showLoader('Loading Survey…');
-            frame.src = URL_INDEX;
-            console.log('📄 → Index/Survey');
-        }
-
-        function showDashboard() {
-            currentPage = 'dashboard';
-            document.body.classList.remove('login-mode');
-            currentPageLabel.textContent = 'Dashboard';
-            showLoader('Loading Dashboard…');
-            frame.src = URL_DASHBOARD;
-            console.log('📄 → Dashboard');
-        }
-
-        // ============================================================
-        // LOGOUT
-        // ============================================================
-        function logout() {
-            if (!confirm('Logout from BVM Survey System?')) return;
-
-            localStorage.removeItem(STORAGE_TOKEN);
-            localStorage.removeItem(STORAGE_ROLE);
-            localStorage.removeItem(STORAGE_NAME);
-            localStorage.removeItem('bvm_user_email');
-
-            try {
-                frame.contentWindow.postMessage({ action: 'logout' }, '*');
-            } catch (e) {
-                console.log('PostMessage failed:', e);
+            function hideLoader() {
+                loader.classList.add('hidden');
+                setTimeout(() => loader.remove(), 500);
             }
 
-            setTimeout(showLogin, 100);
-        }
+            // Hide when iframe finishes loading
+            frame.addEventListener('load', hideLoader);
 
-        // ============================================================
-        // MESSAGE FROM IFRAME
-        // ============================================================
-        window.addEventListener('message', function(event) {
-            const data = event.data;
-            if (!data || typeof data !== 'object') return;
-
-            console.log('📨 Message:', data);
-
-            switch (data.action) {
-                case 'login-success':
-                    console.log('✅ Login success');
-                    showIndex();
-                    break;
-
-                case 'show-dashboard':
-                    showDashboard();
-                    break;
-
-                case 'show-login':
-                    showLogin();
-                    break;
-
-                case 'logout':
-                    localStorage.removeItem(STORAGE_TOKEN);
-                    localStorage.removeItem(STORAGE_ROLE);
-                    localStorage.removeItem(STORAGE_NAME);
-                    showLogin();
-                    break;
-
-                case 'page-loaded':
-                    hideLoader();
-                    break;
-            }
-        });
-
-        frame.addEventListener('load', function() {
-            setTimeout(hideLoader, 300);
-        });
-
-        setTimeout(hideLoader, 5000);
-
-        // ============================================================
-        // INIT
-        // ============================================================
-        (function init() {
-            const token = localStorage.getItem(STORAGE_TOKEN);
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetPage = urlParams.get('page');
-
-            if (token) {
-                if (targetPage === 'Dashboard') {
-                    showDashboard();
-                } else {
-                    showIndex();
-                }
-            } else {
-                showLogin();
-            }
+            // Safety fallback: hide after 4s regardless
+            setTimeout(hideLoader, 4000);
         })();
-
     </script>
+
 </body>
 </html>
